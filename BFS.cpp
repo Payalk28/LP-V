@@ -1,3 +1,6 @@
+//g++ -o bfs -fopenmp bfs.cpp
+//./bfs
+
 #include<iostream>
 #include<stdlib.h>
 #include<queue>
