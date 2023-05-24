@@ -1,3 +1,6 @@
+//g++ -o dfs -fopenmp dfs.cpp
+//./dfs
+
 #include <iostream>
 #include <vector>
 #include <stack>
