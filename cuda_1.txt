@@ -10,383 +10,378 @@
 # %load_ext nvcc_plugin
 
 # Commented out IPython magic to ensure Python compatibility.
-# %%cu
-# #include <iostream>
-# #include <vector>
-# #include <cuda_runtime.h>
-# 
-# using namespace std;
-# 
-# __global__ void matrixMultiplication(int* A, int* B, int* C, int n) {
-#     int row = blockIdx.y * blockDim.y + threadIdx.y;
-#     int col = blockIdx.x * blockDim.x + threadIdx.x;
-# 
-#     if (row < n && col < n) {
-#         int sum = 0;
-#         for (int i = 0; i < n; i++) {
-#             sum += A[row * n + i] * B[i * n + col];
-#         }
-#         C[row * n + col] = sum;
-#     }
-# }
-# 
-# void matrixMultiplicationParallel(int* A, int* B, int* C, int n) {
-#     int* dev_A;
-#     int* dev_B;
-#     int* dev_C;
-#     int size = n * n * sizeof(int);
-# 
-#     cudaMalloc((void**)&dev_A, size);
-#     cudaMalloc((void**)&dev_B, size);
-#     cudaMalloc((void**)&dev_C, size);
-# 
-#     cudaMemcpy(dev_A, A, size, cudaMemcpyHostToDevice);
-#     cudaMemcpy(dev_B, B, size, cudaMemcpyHostToDevice);
-# 
-#     dim3 threadsPerBlock(16, 16);
-#     dim3 numBlocks((n + threadsPerBlock.x - 1) / threadsPerBlock.x,
-#                    (n + threadsPerBlock.y - 1) / threadsPerBlock.y);
-# 
-#     matrixMultiplication<<<numBlocks, threadsPerBlock>>>(dev_A, dev_B, dev_C, n);
-# 
-#     cudaMemcpy(C, dev_C, size, cudaMemcpyDeviceToHost);
-# 
-#     cudaFree(dev_A);
-#     cudaFree(dev_B);
-#     cudaFree(dev_C);
-# }
-# 
-# int main() {
-#     int n = 3;  // Matrix size
-# 
-#     // Input matrices
-#     vector<int> A = {1, 2, 3,
-#                      4, 5, 6,
-#                      7, 8, 9};
-# 
-#     vector<int> B = {9, 8, 7,
-#                      6, 5, 4,
-#                      3, 2, 1};
-# 
-#     // Output matrix
-#     vector<int> C(n * n);
-# 
-#     matrixMultiplicationParallel(A.data(), B.data(), C.data(), n);
-# 
-#     cout << "Resultant matrix C:" << endl;
-#     for (int i = 0; i < n; i++) {
-#         for (int j = 0; j < n; j++) {
-#             cout << C[i * n + j] << " ";
-#         }
-#         cout << endl;
-#     }
-# 
-#     return 0;
-# }
-#
+%%cu
+#include <iostream>
+#include <vector>
+#include <cuda_runtime.h>
+
+using namespace std;
+ 
+__global__ void matrixMultiplication(int* A, int* B, int* C, int n) {
+     int row = blockIdx.y * blockDim.y + threadIdx.y;
+     int col = blockIdx.x * blockDim.x + threadIdx.x;
+ 
+     if (row < n && col < n) {
+         int sum = 0;
+         for (int i = 0; i < n; i++) {
+             sum += A[row * n + i] * B[i * n + col];
+         }
+         C[row * n + col] = sum;
+     }
+ }
+ 
+ void matrixMultiplicationParallel(int* A, int* B, int* C, int n) {
+     int* dev_A;
+     int* dev_B;
+     int* dev_C;
+     int size = n * n * sizeof(int);
+ 
+     cudaMalloc((void**)&dev_A, size);
+     cudaMalloc((void**)&dev_B, size);
+     cudaMalloc((void**)&dev_C, size);
+ 
+     cudaMemcpy(dev_A, A, size, cudaMemcpyHostToDevice);
+     cudaMemcpy(dev_B, B, size, cudaMemcpyHostToDevice);
+ 
+     dim3 threadsPerBlock(16, 16);
+     dim3 numBlocks((n + threadsPerBlock.x - 1) / threadsPerBlock.x,
+                    (n + threadsPerBlock.y - 1) / threadsPerBlock.y);
+ 
+     matrixMultiplication<<<numBlocks, threadsPerBlock>>>(dev_A, dev_B, dev_C, n);
+ 
+     cudaMemcpy(C, dev_C, size, cudaMemcpyDeviceToHost);
+ 
+     cudaFree(dev_A);
+     cudaFree(dev_B);
+     cudaFree(dev_C);
+ }
+ 
+ int main() {
+     int n = 3;  // Matrix size
+ 
+     // Input matrices
+     vector<int> A = {1, 2, 3,
+                      4, 5, 6,
+                      7, 8, 9};
+ 
+     vector<int> B = {9, 8, 7,
+                      6, 5, 4,
+                      3, 2, 1};
+ 
+     // Output matrix
+     vector<int> C(n * n);
+ 
+     matrixMultiplicationParallel(A.data(), B.data(), C.data(), n);
+ 
+     cout << "Resultant matrix C:" << endl;
+     for (int i = 0; i < n; i++) {
+         for (int j = 0; j < n; j++) {
+             cout << C[i * n + j] << " ";
+         }
+         cout << endl;
+     }
+ 
+     return 0;
+ }
 
 # Commented out IPython magic to ensure Python compatibility.
-# %%cu
-# #include <stdio.h>
-# #include <stdlib.h>
-# #include <cuda.h>
-# 
-# #define INF 99999
-# 
-# __global__ void floydWarshall(int* graph, int vertices, int k) {
-#     int i = blockIdx.x * blockDim.x + threadIdx.x;
-#     int j = blockIdx.y * blockDim.y + threadIdx.y;
-# 
-#     if (i < vertices && j < vertices) {
-#         int index = i * vertices + j;
-#         int ik = i * vertices + k;
-#         int kj = k * vertices + j;
-# 
-#         if (graph[ik] + graph[kj] < graph[index]) {
-#             graph[index] = graph[ik] + graph[kj];
-#         }
-#     }
-# }
-# 
-# void printSolution(int* dist, int vertices) {
-#     printf("Shortest paths between all pairs of vertices:\n");
-#     for (int i = 0; i < vertices; i++) {
-#         for (int j = 0; j < vertices; j++) {
-#             if (dist[i * vertices + j] == INF)
-#                 printf("%7s", "INF");
-#             else
-#                 printf("%7d", dist[i * vertices + j]);
-#         }
-#         printf("\n");
-#     }
-# }
-# 
-# int main() {
-#     int vertices = 4;
-#     int graph[4][4] = {
-#         {0, 8, INF, 1 },
-#         { INF, 0, 1, INF },
-#         { 4, INF, 0, INF },
-#         { INF, 2, 9, 0}
-#         
-#     };
-# 
-#     int* deviceGraph;
-#     int graphSize = vertices * vertices * sizeof(int);
-# 
-#     // Allocate memory on the GPU
-#     cudaMalloc((void**)&deviceGraph, graphSize);
-# 
-#     // Copy graph from host to device memory
-#     cudaMemcpy(deviceGraph, graph, graphSize, cudaMemcpyHostToDevice);
-# 
-#     // Determine the number of blocks and threads for parallel execution
-#     dim3 threadsPerBlock(16, 16);
-#     dim3 blocksPerGrid((vertices + threadsPerBlock.x - 1) / threadsPerBlock.x,
-#                        (vertices + threadsPerBlock.y - 1) / threadsPerBlock.y);
-# 
-#     // Execute the Floyd-Warshall algorithm on the GPU using dynamic programming
-#     for (int k = 0; k < vertices; k++) {
-#         floydWarshall<<<blocksPerGrid, threadsPerBlock>>>(deviceGraph, vertices, k);
-#         cudaDeviceSynchronize();
-#     }
-# 
-#     // Copy the result back to the host memory
-#     cudaMemcpy(graph, deviceGraph, graphSize, cudaMemcpyDeviceToHost);
-# 
-#     // Free the allocated memory on the GPU
-#     cudaFree(deviceGraph);
-# 
-#     // Print the shortest paths
-#     printSolution((int*)graph, vertices);
-# 
-#     return 0;
-# }
-#
+ %%cu
+#include <stdio.h>
+ #include <stdlib.h>
+ #include <cuda.h>
+ 
+ #define INF 99999
+ 
+ __global__ void floydWarshall(int* graph, int vertices, int k) {
+     int i = blockIdx.x * blockDim.x + threadIdx.x;
+     int j = blockIdx.y * blockDim.y + threadIdx.y;
+ 
+     if (i < vertices && j < vertices) {
+         int index = i * vertices + j;
+         int ik = i * vertices + k;
+         int kj = k * vertices + j;
+ 
+         if (graph[ik] + graph[kj] < graph[index]) {
+             graph[index] = graph[ik] + graph[kj];
+         }
+     }
+ }
+ 
+ void printSolution(int* dist, int vertices) {
+     printf("Shortest paths between all pairs of vertices:\n");
+     for (int i = 0; i < vertices; i++) {
+         for (int j = 0; j < vertices; j++) {
+             if (dist[i * vertices + j] == INF)
+                 printf("%7s", "INF");
+             else
+                 printf("%7d", dist[i * vertices + j]);
+         }
+         printf("\n");
+     }
+ }
+ 
+ int main() {
+     int vertices = 4;
+     int graph[4][4] = {
+         {0, 8, INF, 1 },
+         { INF, 0, 1, INF },
+         { 4, INF, 0, INF },
+         { INF, 2, 9, 0}
+         
+     };
+ 
+     int* deviceGraph;
+     int graphSize = vertices * vertices * sizeof(int);
+ 
+     // Allocate memory on the GPU
+     cudaMalloc((void**)&deviceGraph, graphSize);
+ 
+     // Copy graph from host to device memory
+     cudaMemcpy(deviceGraph, graph, graphSize, cudaMemcpyHostToDevice);
+ 
+     // Determine the number of blocks and threads for parallel execution
+     dim3 threadsPerBlock(16, 16);
+     dim3 blocksPerGrid((vertices + threadsPerBlock.x - 1) / threadsPerBlock.x,
+                        (vertices + threadsPerBlock.y - 1) / threadsPerBlock.y);
+ 
+     // Execute the Floyd-Warshall algorithm on the GPU using dynamic programming
+     for (int k = 0; k < vertices; k++) {
+         floydWarshall<<<blocksPerGrid, threadsPerBlock>>>(deviceGraph, vertices, k);
+         cudaDeviceSynchronize();
+     }
+ 
+     // Copy the result back to the host memory
+     cudaMemcpy(graph, deviceGraph, graphSize, cudaMemcpyDeviceToHost);
+ 
+     // Free the allocated memory on the GPU
+     cudaFree(deviceGraph);
+ 
+     // Print the shortest paths
+     printSolution((int*)graph, vertices);
+ 
+     return 0;
+ }
 
 # Commented out IPython magic to ensure Python compatibility.
-# %%cu
-# #include <stdio.h>
-# #include <stdlib.h>
-# #include <math.h>
-# 
-# __global__ void vecAdd(double *a, double *b, double *c, int n)
-# {
-#     // Get our global thread ID
-#     int id = blockIdx.x*blockDim.x+threadIdx.x;
-# 
-#     // Make sure we do not go out of bounds
-#     if (id < n)
-#         c[id] = a[id] + b[id];
-# }
-# 
-# int main( int argc, char* argv[] )
-# {
-#     // Size of vectors
-#     int n = 100000;
-# 
-#     // Host input vectors
-#     double *h_a;
-#     double *h_b;
-#     //Host output vector
-#     double *h_c;
-# 
-#     // Device input vectors
-#     double *d_a;
-#     double *d_b;
-#     //Device output vector
-#     double *d_c;
-# 
-#     // Size, in bytes, of each vector
-#     size_t bytes = n*sizeof(double);
-# 
-#     // Allocate memory for each vector on host
-#     h_a = (double*)malloc(bytes);
-#     h_b = (double*)malloc(bytes);
-#     h_c = (double*)malloc(bytes);
-# 
-#     // Allocate memory for each vector on GPU
-#     cudaMalloc(&d_a, bytes);
-#     cudaMalloc(&d_b, bytes);
-#     cudaMalloc(&d_c, bytes);
-# 
-#     int i;
-#     // Initialize vectors on host
-#     for( i = 0; i < n; i++ ) {
-#         h_a[i] = sin(i)*sin(i);
-#         h_b[i] = cos(i)*cos(i);
-#     }
-# 
-#     // Copy host vectors to device
-#     cudaMemcpy( d_a, h_a, bytes, cudaMemcpyHostToDevice);
-#     cudaMemcpy( d_b, h_b, bytes, cudaMemcpyHostToDevice);
-# 
-#     int blockSize, gridSize;
-# 
-#     // Number of threads in each thread block
-#     blockSize = 1024;
-# 
-#     // Number of thread blocks in grid
-#     gridSize = (int)ceil((float)n/blockSize);
-# 
-#     // Execute the kernel
-#     vecAdd<<<gridSize, blockSize>>>(d_a, d_b, d_c, n);
-# 
-#     // Copy array back to host
-#     cudaMemcpy( h_c, d_c, bytes, cudaMemcpyDeviceToHost );
-# 
-#     // Sum up vector c and print result divided by n, this should equal 1 within error
-#     double sum = 0;
-#     for(i=0; i<n; i++)
-#         sum += h_c[i];
-#     printf("final result: %f\n", sum/n);
-# 
-#     // Release device memory
-#     cudaFree(d_a);
-#     cudaFree(d_b);
-#     cudaFree(d_c);
-# 
-#     // Release host memory
-#     free(h_a);
-#     free(h_b);
-#     free(h_c);
-# 
-#     return 0;
-# }
+ %%cu
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <math.h>
+ 
+ __global__ void vecAdd(double *a, double *b, double *c, int n)
+ {
+     // Get our global thread ID
+     int id = blockIdx.x*blockDim.x+threadIdx.x;
+ 
+     // Make sure we do not go out of bounds
+     if (id < n)
+         c[id] = a[id] + b[id];
+ }
+ 
+ int main( int argc, char* argv[] )
+ {
+     // Size of vectors
+     int n = 100000;
+ 
+     // Host input vectors
+     double *h_a;
+     double *h_b;
+     //Host output vector
+     double *h_c;
+ 
+     // Device input vectors
+     double *d_a;
+     double *d_b;
+     //Device output vector
+     double *d_c;
+ 
+     // Size, in bytes, of each vector
+     size_t bytes = n*sizeof(double);
+ 
+     // Allocate memory for each vector on host
+     h_a = (double*)malloc(bytes);
+     h_b = (double*)malloc(bytes);
+     h_c = (double*)malloc(bytes);
+ 
+     // Allocate memory for each vector on GPU
+     cudaMalloc(&d_a, bytes);
+     cudaMalloc(&d_b, bytes);
+     cudaMalloc(&d_c, bytes);
+ 
+     int i;
+     // Initialize vectors on host
+     for( i = 0; i < n; i++ ) {
+         h_a[i] = sin(i)*sin(i);
+         h_b[i] = cos(i)*cos(i);
+     }
+ 
+     // Copy host vectors to device
+     cudaMemcpy( d_a, h_a, bytes, cudaMemcpyHostToDevice);
+     cudaMemcpy( d_b, h_b, bytes, cudaMemcpyHostToDevice);
+ 
+     int blockSize, gridSize;
+ 
+     // Number of threads in each thread block
+     blockSize = 1024;
+ 
+     // Number of thread blocks in grid
+     gridSize = (int)ceil((float)n/blockSize);
+ 
+     // Execute the kernel
+     vecAdd<<<gridSize, blockSize>>>(d_a, d_b, d_c, n);
+ 
+     // Copy array back to host
+     cudaMemcpy( h_c, d_c, bytes, cudaMemcpyDeviceToHost );
+ 
+     // Sum up vector c and print result divided by n, this should equal 1 within error
+     double sum = 0;
+     for(i=0; i<n; i++)
+         sum += h_c[i];
+     printf("final result: %f\n", sum/n);
+ 
+     // Release device memory
+     cudaFree(d_a);
+     cudaFree(d_b);
+     cudaFree(d_c);
+ 
+     // Release host memory
+     free(h_a);
+     free(h_b);
+     free(h_c);
+ 
+     return 0;
+ }
+# Commented out IPython magic to ensure Python compatibility.
+ %%cu
+ #include <iostream>  
+ #include <cuda_runtime.h>
+ 
+ using namespace std;
+ 
+ __global__ void addVectors(int* A, int* B, int* C, int n) 
+ {
+     int i = blockIdx.x * blockDim.x + threadIdx.x; 
+     if (i < n) 
+     {
+         C[i] = A[i] + B[i];
+     }
+ }
+ 
+ int main() 
+ {
+     int n = 1000000;  
+     int* A, * B, * C;
+     int size = n * sizeof(int);
+ 
+     // Allocate memory on the host  
+     cudaMallocHost(&A, size);  
+     cudaMallocHost(&B, size);  
+     cudaMallocHost(&C, size);
+ 
+     // Initialize the vectors
+     for (int i = 0; i < n; i++) 
+     {
+         A[i] = i;
+         B[i] = i * 2;
+     }
+     // Allocate memory on the device  
+     int* dev_A, * dev_B, * dev_C;  
+     cudaMalloc(&dev_A, size);  
+     cudaMalloc(&dev_B, size);  
+     cudaMalloc(&dev_C, size);
+ 
+     // Copy data from host to device
+     cudaMemcpy(dev_A, A, size, cudaMemcpyHostToDevice);  
+     cudaMemcpy(dev_B, B, size, cudaMemcpyHostToDevice);
+ 
+     // Launch the kernel  
+     int blockSize = 256;
+     int numBlocks = (n + blockSize - 1) / blockSize;
+     addVectors<<<numBlocks, blockSize>>>(dev_A, dev_B, dev_C, n);
+ 
+     // Copy data from device to host
+     cudaMemcpy(C, dev_C, size, cudaMemcpyDeviceToHost);
+ 
+     // Print the results
+     for (int i = 0; i < 10; i++) 
+     {
+         cout << C[i] << " ";
+     }
+     cout << endl;
+ 
+     // Free memory  
+     cudaFree(dev_A);  
+     cudaFree(dev_B);  
+     cudaFree(dev_C);  
+     cudaFreeHost(A);  
+     cudaFreeHost(B);  
+     cudaFreeHost(C);
+ 
+     return 0;
+ }
 
 # Commented out IPython magic to ensure Python compatibility.
-# %%cu
-# #include <iostream>  
-# #include <cuda_runtime.h>
-# 
-# using namespace std;
-# 
-# __global__ void addVectors(int* A, int* B, int* C, int n) 
-# {
-#     int i = blockIdx.x * blockDim.x + threadIdx.x; 
-#     if (i < n) 
-#     {
-#         C[i] = A[i] + B[i];
-#     }
-# }
-# 
-# int main() 
-# {
-#     int n = 1000000;  
-#     int* A, * B, * C;
-#     int size = n * sizeof(int);
-# 
-#     // Allocate memory on the host  
-#     cudaMallocHost(&A, size);  
-#     cudaMallocHost(&B, size);  
-#     cudaMallocHost(&C, size);
-# 
-#     // Initialize the vectors
-#     for (int i = 0; i < n; i++) 
-#     {
-#         A[i] = i;
-#         B[i] = i * 2;
-#     }
-#     // Allocate memory on the device  
-#     int* dev_A, * dev_B, * dev_C;  
-#     cudaMalloc(&dev_A, size);  
-#     cudaMalloc(&dev_B, size);  
-#     cudaMalloc(&dev_C, size);
-# 
-#     // Copy data from host to device
-#     cudaMemcpy(dev_A, A, size, cudaMemcpyHostToDevice);  
-#     cudaMemcpy(dev_B, B, size, cudaMemcpyHostToDevice);
-# 
-#     // Launch the kernel  
-#     int blockSize = 256;
-#     int numBlocks = (n + blockSize - 1) / blockSize;
-#     addVectors<<<numBlocks, blockSize>>>(dev_A, dev_B, dev_C, n);
-# 
-#     // Copy data from device to host
-#     cudaMemcpy(C, dev_C, size, cudaMemcpyDeviceToHost);
-# 
-#     // Print the results
-#     for (int i = 0; i < 10; i++) 
-#     {
-#         cout << C[i] << " ";
-#     }
-#     cout << endl;
-# 
-#     // Free memory  
-#     cudaFree(dev_A);  
-#     cudaFree(dev_B);  
-#     cudaFree(dev_C);  
-#     cudaFreeHost(A);  
-#     cudaFreeHost(B);  
-#     cudaFreeHost(C);
-# 
-#     return 0;
-# }
-#
-
-# Commented out IPython magic to ensure Python compatibility.
-# %%cu
-# #include <cuda_runtime.h>
-# #include <iostream>
-# 
-# __global__ void matmul(int* A, int* B, int* C, int N) {
-#     int Row = blockIdx.y*blockDim.y+threadIdx.y;
-#     int Col = blockIdx.x*blockDim.x+threadIdx.x;
-#     if (Row < N && Col < N) {
-#         int Pvalue = 0;
-#         for (int k = 0; k < N; k++) {
-#             Pvalue += A[Row*N+k] * B[k*N+Col];
-#         }
-#         C[Row*N+Col] = Pvalue;
-#     }
-# }
-# 
-# int main() {
-#     int N = 50;
-#     int size = N * N * sizeof(int);
-#     int* A, * B, * C;
-#     int* dev_A, * dev_B, * dev_C;
-#     cudaMallocHost(&A, size);
-#     cudaMallocHost(&B, size);
-#     cudaMallocHost(&C, size);
-#     cudaMalloc(&dev_A, size);
-#     cudaMalloc(&dev_B, size);
-#     cudaMalloc(&dev_C, size);
-# 
-#     // Initialize matrices A and B
-#     for (int i = 0; i < N; i++) {
-#         for (int j = 0; j < N; j++) {
-#             A[i*N+j] = i*N+j;
-#             B[i*N+j] = j*N+i;
-#         }
-#     }
-# 
-#     cudaMemcpy(dev_A, A, size, cudaMemcpyHostToDevice);
-#     cudaMemcpy(dev_B, B, size, cudaMemcpyHostToDevice);
-# 
-#     dim3 dimBlock(16, 16);
-#     dim3 dimGrid(N/dimBlock.x, N/dimBlock.y);
-# 
-#     matmul<<<dimGrid, dimBlock>>>(dev_A, dev_B, dev_C, N);
-# 
-#     cudaMemcpy(C, dev_C, size, cudaMemcpyDeviceToHost);
-# 
-#     // Print the result
-#     for (int i = 0; i < 10; i++) {
-#         for (int j = 0; j < 10; j++) {
-#             std::cout << C[i*N+j] << " ";
-#         }
-#         std::cout << std::endl;
-#     }
-# 
-#     // Free memory
-#     cudaFree(dev_A);
-#     cudaFree(dev_B);
-#     cudaFree(dev_C);
-#     cudaFreeHost(A);
-#     cudaFreeHost(B);
-#     cudaFreeHost(C);
-# 
-#     return 0;
-# }
-#
+ %%cu
+ #include <cuda_runtime.h>
+ #include <iostream>
+ 
+ __global__ void matmul(int* A, int* B, int* C, int N) {
+     int Row = blockIdx.y*blockDim.y+threadIdx.y;
+     int Col = blockIdx.x*blockDim.x+threadIdx.x;
+     if (Row < N && Col < N) {
+         int Pvalue = 0;
+         for (int k = 0; k < N; k++) {
+             Pvalue += A[Row*N+k] * B[k*N+Col];
+         }
+         C[Row*N+Col] = Pvalue;
+     }
+ }
+ 
+ int main() {
+     int N = 50;
+     int size = N * N * sizeof(int);
+     int* A, * B, * C;
+     int* dev_A, * dev_B, * dev_C;
+     cudaMallocHost(&A, size);
+     cudaMallocHost(&B, size);
+     cudaMallocHost(&C, size);
+     cudaMalloc(&dev_A, size);
+     cudaMalloc(&dev_B, size);
+     cudaMalloc(&dev_C, size);
+ 
+     // Initialize matrices A and B
+     for (int i = 0; i < N; i++) {
+         for (int j = 0; j < N; j++) {
+             A[i*N+j] = i*N+j;
+             B[i*N+j] = j*N+i;
+         }
+     }
+ 
+     cudaMemcpy(dev_A, A, size, cudaMemcpyHostToDevice);
+     cudaMemcpy(dev_B, B, size, cudaMemcpyHostToDevice);
+ 
+     dim3 dimBlock(16, 16);
+     dim3 dimGrid(N/dimBlock.x, N/dimBlock.y);
+ 
+     matmul<<<dimGrid, dimBlock>>>(dev_A, dev_B, dev_C, N);
+ 
+     cudaMemcpy(C, dev_C, size, cudaMemcpyDeviceToHost);
+ 
+     // Print the result
+     for (int i = 0; i < 10; i++) {
+         for (int j = 0; j < 10; j++) {
+             std::cout << C[i*N+j] << " ";
+         }
+         std::cout << std::endl;
+     }
+ 
+     // Free memory
+     cudaFree(dev_A);
+     cudaFree(dev_B);
+     cudaFree(dev_C);
+     cudaFreeHost(A);
+     cudaFreeHost(B);
+     cudaFreeHost(C);
+ 
+     return 0;
+ }
