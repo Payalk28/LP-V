@@ -10,6 +10,7 @@ import seaborn as sns
 import pandas as pd
 
 data=pd.read_csv("/content/housing (1).csv")
+data.dropna(inplace=True)
 data
 
 data.dtypes
