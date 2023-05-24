@@ -1,3 +1,6 @@
+//g++ -o MINMAX -fopenmp MINMAX.cpp
+//./MINMAX
+
 #include <iostream>
 //#include <vector>
 #include <omp.h>
